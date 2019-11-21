@@ -1,9 +1,6 @@
 import classes, random
 
-
 allPlayers = []
-
-
 
 def welcomeScreen():
     print('*******************************')
@@ -32,9 +29,11 @@ def Start():
     welcomeScreen()
     game = classes.Game(gameModeInputCheck(), playerAmountInputCheck())
     createPlayers(game.amountOfPlayers)
-              
-    leaderBoard()
-    randomNumber()
+    while True:
+        game.changeTurn = False
+        leaderBoard(True)
+        while game.changeTurn == False:
+            randomNumber()
 
 
 def createPlayers(amountOfPlayers):
@@ -43,29 +42,88 @@ def createPlayers(amountOfPlayers):
         for i in range(amountOfPlayers-1):
             allPlayers.append(classes.Player(input('Enter the name of player ' + str(i+2) + ' : '), False))
 
-def leaderBoard():
-    print('\n*******************************')
-    print('Total Saved Scores\n')
+def leaderBoard(FirstTimeCalled):
+    def totalSavedScoresList():
+        print('\n*******************************')
+        print('Total Saved Scores\n')
+        for i in allPlayers:
+            print(i.name + ' = ' + str(i.savedPoints))
+        print('----------------------')
+    totalSavedScoresList()
     for i in allPlayers:
-        print(i.name + ' = ' + str(i.savedPoints))
-    print('----------------------')
-    for i in allPlayers:
-        if i.hasTurn == True:
+        if i.hasTurn == True and game.changeTurn == False:
             game.currentPlayer = i
             print('Current Player:', game.currentPlayer.name)
             print('Your current score at this turn:', str(game.currentPlayer.currentPoints), '\n')
-            print(i.name + ' your first dice at this turn will be automatically rolled!\n')
-            print('Ready?\n\n')
-            input('press enter to continue ...')
+            if FirstTimeCalled == True:
+                print(i.name + ' your first dice at this turn will be automatically rolled!\n')
+                print('Ready?\n\n')
+                input('press enter to continue ...')
+            else:
+                rollTurn = "r"
+                passTurn = "p"
+                input('press enter to continue ...')
+
+                correctInput = False
+                while correctInput == False:
+                    rollOrPass = input('\n' + game.currentPlayer.name + ' choose your next decision: ' + rollTurn + ': roll the dice ' + passTurn + ': pass the turn and save your score: ') 
+                    if rollOrPass == passTurn and game.currentPlayer.currentPoints + game.currentPlayer.savedPoints >= game.MaxPoint:
+                        game.currentPlayer.savedPoints = game.currentPlayer.savedPoints + game.currentPlayer.currentPoints
+                        totalSavedScoresList()
+                        print('\n  ' + game.currentPlayer.name + ' won the game with a score of ' + game.currentPlayer.savedPoints + '\n')
+                        exit()
+                    elif rollOrPass == passTurn:
+                        for e in range(len(allPlayers)):
+                            if allPlayers[e].hasTurn == True:
+                                try:
+                                    game.currentPlayer = allPlayers[e+1]
+                                except:
+                                    game.currentPlayer = allPlayers[0]
+                                game.currentPlayer.hasTurn = True
+                                for o in allPlayers:
+                                    if o.hasTurn and o != game.currentPlayer:
+                                        o.hasTurn = not(o.hasTurn)
+                                        o.savedPoints = o.savedPoints + o.currentPoints
+                                        o.currentPoints = 0
+                                print('Pass the dice to ' + game.currentPlayer.name)
+                                game.changeTurn = True
+                                correctInput = True
+                                break
+                    elif rollOrPass == rollTurn:
+                        correctInput = True
+                    else:
+                        print("Invalid Input.")
+            
 
 def randomNumber():
     print('\n\n***********************')
 
     # Rethink design of the random number
-    game.currentPlayer.currentPoints = random.randint(0,6)
 
-    print('******** Rolled ' + str(game.currentPlayer.currentPoints) + ' *********')
+    game.currentPlayer.turnPoints = random.randint(1,6)
+
+    print('******** Rolled ' + str(game.currentPlayer.turnPoints) + ' *********')
     print('***********************')
-    print('new collected score = ' + str(game.currentPlayer.savedPoints) + ' + ' + str(game.currentPlayer.currentPoints) +
-         ' = ' + str(game.currentPlayer.savedPoints + game.currentPlayer.currentPoints) + '\n')
+    if game.currentPlayer.turnPoints == 1:
+        game.currentPlayer.currentPoints = 0
+        print('Oops! You lose ' + str(game.currentPlayer.turnPoints) + ' but still keep your previous '+ str(game.currentPlayer.savedPoints))
 
+        for e in range(len(allPlayers)):
+            if allPlayers[e].hasTurn == True:
+                try:
+                    game.currentPlayer = allPlayers[e+1]
+                except:
+                    game.currentPlayer = allPlayers[0]
+                game.currentPlayer.hasTurn = True
+                for o in allPlayers:
+                    if o.hasTurn and o != game.currentPlayer:
+                        o.hasTurn = not(o.hasTurn)
+                        o.savedPoints = o.savedPoints + o.currentPoints
+                        o.currentPoints = 0
+                game.changeTurn = True
+                break
+    else:
+        print('new collected score = ' + str(game.currentPlayer.currentPoints) + ' + ' + str(game.currentPlayer.turnPoints) +
+         ' = ' + str(game.currentPlayer.currentPoints + game.currentPlayer.turnPoints) + '\n')
+        game.currentPlayer.currentPoints = game.currentPlayer.currentPoints + game.currentPlayer.turnPoints
+        leaderBoard(False)
